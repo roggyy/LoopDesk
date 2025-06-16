@@ -1,0 +1,7 @@
+google-adk==1.2.1
+mailjet-rest==1.4.0
+yfinance==0.2.63
+
+#https://google.github.io/adk-docs/streaming/custom-streaming/#3.-interact-with-your-streaming-app
+
+#fix: https://github.com/google/adk-python/issues/1348
