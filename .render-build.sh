@@ -21,37 +21,24 @@ fi
 cp "$ADK_PATH" "${ADK_PATH}.bak"
 echo "✅ Created backup at ${ADK_PATH}.bak"
 
-# First, clean up any existing modifications
-echo "🔍 Cleaning up any existing modifications..."
-sed -i '/#.*response_event_id=/d' "$ADK_PATH"
-sed -i '/#.*function_response=/d' "$ADK_PATH"
-
-# Remove duplicate append lines
-sed -i '/function_response_events.append(function_response_event)/{n;d;}' "$ADK_PATH"
-
-# Apply the patch - convert from new format to old format
-echo "🔍 Applying patch..."
-sed -i -e '/trace_tool_call(/,/)/ {/response_event_id=function_response_event.id/,/function_response=function_response,/d}' "$ADK_PATH"
-sed -i '/trace_tool_call(/,/)/ {/args=function_args,/a\          function_response_event=function_response_event,'"$'\n'"\      )\n      function_response_events.append(function_response_event)"'}' "$ADK_PATH"
-
-# Verify patch
-echo "🔍 Verifying patch..."
-if grep -q "function_response_event=function_response_event" "$ADK_PATH"; then
-    echo "✅ Patch applied successfully!"
-    echo "🔍 Current state:"
-    grep -A 10 "trace_tool_call" "$ADK_PATH" | head -n 10
-else
-    echo "❌ Patch failed to apply"
-    # Restore backup
-    mv "${ADK_PATH}.bak" "$ADK_PATH"
-    exit 1
-fi
-
-# Ensure only one append line exists
-sed -i '/function_response_events.append(function_response_event)/{n;/function_response_events.append(function_response_event)/d;}' "$ADK_PATH"
-
-echo "✅ Final state:"
-grep -A 5 "trace_tool_call" "$ADK_PATH"
-grep -A 1 "function_response_events.append" "$ADK_PATH" | head -n 2
-
-echo "Build and patch completed successfully!"
+# Create a temporary file for the patch
+TEMP_PATCH=$(mktemp)
+cat > "$TEMP_PATCH" << 'EOL'
+--- functions.py.original
++++ functions.py.patched
+@@ -1,4 +1,4 @@
+-# Original file will be patched here
++# This is a patch file
+ # The actual content will be replaced by sed
+ 
+ def handle_function_calls_live(...):
+@@ -6,7 +6,7 @@
+         trace_tool_call(
+             tool=tool,
+             args=function_args,
+-            response_event_id=function_response_event.id,
+-            function_response=function_response,
++            function_response_event=function_response_event,
+         )
++        function_response_events.append(function_response_event)
+ EOL
