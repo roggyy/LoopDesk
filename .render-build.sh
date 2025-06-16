@@ -21,18 +21,25 @@ fi
 cp "$ADK_PATH" "${ADK_PATH}.bak"
 echo "✅ Created backup at ${ADK_PATH}.bak"
 
-# Apply patch
-echo "🔍 Before patch:"
-grep -A 5 "trace_tool_call" "$ADK_PATH" || echo "❌ trace_tool_call not found"
+# First, clean up any existing modifications
+echo "🔍 Cleaning up any existing modifications..."
+sed -i '/#.*response_event_id=/d' "$ADK_PATH"
+sed -i '/#.*function_response=/d' "$ADK_PATH"
 
-# Apply the patch - this converts from new format to old format
-sed -i 's/response_event_id=function_response_event.id,\n\s*function_response=function_response,/function_response_event=function_response_event,/' "$ADK_PATH"
+# Remove duplicate append lines
+sed -i '/function_response_events.append(function_response_event)/{n;d;}' "$ADK_PATH"
+
+# Apply the patch - convert from new format to old format
+echo "🔍 Applying patch..."
+sed -i -e '/trace_tool_call(/,/)/ {/response_event_id=function_response_event.id/,/function_response=function_response,/d}' "$ADK_PATH"
+sed -i '/trace_tool_call(/,/)/ {/args=function_args,/a\          function_response_event=function_response_event,'"$'\n'"\      )\n      function_response_events.append(function_response_event)"'}' "$ADK_PATH"
 
 # Verify patch
-echo "🔍 After patch:"
+echo "🔍 Verifying patch..."
 if grep -q "function_response_event=function_response_event" "$ADK_PATH"; then
     echo "✅ Patch applied successfully!"
-    grep -A 5 "trace_tool_call" "$ADK_PATH"
+    echo "🔍 Current state:"
+    grep -A 10 "trace_tool_call" "$ADK_PATH" | head -n 10
 else
     echo "❌ Patch failed to apply"
     # Restore backup
@@ -40,18 +47,11 @@ else
     exit 1
 fi
 
-# Add back the function_response_events.append line if it's missing
-if ! grep -q "function_response_events.append(function_response_event)" "$ADK_PATH"; then
-    sed -i '/trace_tool_call/a \      function_response_events.append(function_response_event)' "$ADK_PATH"
-    echo "✅ Added back function_response_events.append line"
-fi
-
-# Remove the commented lines if they exist
-sed -i '/# response_event_id=/d' "$ADK_PATH"
-sed -i '/# function_response=/d' "$ADK_PATH"
+# Ensure only one append line exists
+sed -i '/function_response_events.append(function_response_event)/{n;/function_response_events.append(function_response_event)/d;}' "$ADK_PATH"
 
 echo "✅ Final state:"
 grep -A 5 "trace_tool_call" "$ADK_PATH"
-grep -A 1 "function_response_events.append" "$ADK_PATH"
+grep -A 1 "function_response_events.append" "$ADK_PATH" | head -n 2
 
 echo "Build and patch completed successfully!"
