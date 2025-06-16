@@ -21,47 +21,44 @@ fi
 cp "$ADK_PATH" "${ADK_PATH}.bak"
 echo "✅ Created backup at ${ADK_PATH}.bak"
 
-# Create a temporary file for the patched content
+# First, remove all existing trace_tool_call blocks
+sed -i '/trace_tool_call(/,/)/d' "$ADK_PATH"
+
+# Then, add our patched version in the right place
+# Find the line with AF_FUNCTION_CALL_ID_PREFIX
+INSERT_POINT=$(grep -n "AF_FUNCTION_CALL_ID_PREFIX" "$ADK_PATH" | cut -d: -f1)
+if [ -z "$INSERT_POINT" ]; then
+    echo "❌ Could not find insertion point"
+    mv "${ADK_PATH}.bak" "$ADK_PATH"
+    exit 1
+fi
+
+# Create a temporary file for the patch
 TEMP_FILE=$(mktemp)
 
-# Flag to track if we've made our changes
-patch_applied=false
+# Copy everything before the insertion point
+head -n $INSERT_POINT "$ADK_PATH" > "$TEMP_FILE"
 
-# Process the file line by line
-while IFS= read -r line; do
-    # If we find the trace_tool_call pattern
-    if [[ $line == *"trace_tool_call("* ]]; then
-        # If we haven't applied our patch yet
-        if [ "$patch_applied" = false ]; then
-            echo "      trace_tool_call("
-            echo "          tool=tool,"
-            echo "          args=function_args,"
-            echo "          function_response_event=function_response_event,"
-            echo "      )"
-            echo "      function_response_events.append(function_response_event)"
-            # Skip the original function call lines
-            while IFS= read -r inner_line; do
-                [[ $inner_line == *")"* ]] && break
-            done
-            patch_applied=true
-        else
-            # For any other trace_tool_call, just copy it as is
-            echo "$line"
-        fi
-    else
-        # Skip any duplicate append lines that might already exist
-        if [[ $line == *"function_response_events.append(function_response_event)"* ]]; then
-            if [ "$patch_applied" = false ]; then
-                echo "$line"
-            fi
-        else
-            echo "$line"
-        fi
-    fi
-done < "$ADK_PATH" > "$TEMP_FILE"
+# Add our patched code
+cat >> "$TEMP_FILE" << 'EOL'
+AF_FUNCTION_CALL_ID_PREFIX = 'adk-'
+
+      trace_tool_call(
+          tool=tool,
+          args=function_args,
+          function_response_event=function_response_event,
+      )
+      function_response_events.append(function_response_event)
+EOL
+
+# Skip the original AF_FUNCTION_CALL_ID_PREFIX line and everything until the next empty line
+tail -n +$((INSERT_POINT + 1)) "$ADK_PATH" | awk 'NR==1{next} /^$/{found=1} found' >> "$TEMP_FILE"
 
 # Replace the original file
 mv "$TEMP_FILE" "$ADK_PATH"
+
+# Remove any duplicate append lines
+sed -i '/function_response_events.append(function_response_event)/{n;/function_response_events.append(function_response_event)/d;}' "$ADK_PATH"
 
 echo "✅ Patch applied successfully!"
 echo "🔍 Final state:"
