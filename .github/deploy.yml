@@ -1,0 +1,43 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Apply ADK fix
+      run: |
+        find . -name "functions.py" -type f -exec sed -i "s/function_response_event=function_response_event,/response_event_id=function_response_event.id,\\n        function_response=function_response,/" {} \;
+
+    - name: Deploy to Render
+      # You might need to configure Render CLI or use a Render deploy key here
+      # This is a placeholder, replace with your actual deployment steps
+      run: |
+        echo "Deploying to Render..."
+        # Example using Render CLI (requires setup):
+        # render deploy --service stackloop-agent
+        # Or, if using a Render deploy key, you might use a script to trigger the deploy
+        echo "Deployment complete (replace with actual deployment command)"
