@@ -12,4 +12,4 @@ services:
       pip install -r requirements.txt
       # Apply the ADK fix
       find . -name "functions.py" -type f -exec sed -i "s/function_response_event=function_response_event,/response_event_id=function_response_event.id,\n        function_response=function_response,/" {} \;
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
