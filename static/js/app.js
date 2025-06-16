@@ -8,10 +8,8 @@
 
 // Connect the server with SSE
 const sessionId = Math.random().toString().substring(10);
-const sse_url =
-  "http://" + window.location.host + "/events/" + sessionId;
-const send_url =
-  "http://" + window.location.host + "/send/" + sessionId;
+const sse_url = window.location.protocol + "//" + window.location.host + "/events/" + sessionId;
+const send_url = window.location.protocol + "//" + window.location.host + "/send/" + sessionId;
 let eventSource = null;
 let is_audio = false;
 
