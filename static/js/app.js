@@ -6,10 +6,27 @@
  * SSE (Server-Sent Events) handling
  */
 
+////for render
 // Connect the server with SSE
 const sessionId = Math.random().toString().substring(10);
-const sse_url = window.location.protocol + "//" + window.location.host + "/events/" + sessionId;
-const send_url = window.location.protocol + "//" + window.location.host + "/send/" + sessionId;
+// const sse_url = window.location.protocol + "//" + window.location.host + "/events/" + sessionId;
+// const send_url = window.location.protocol + "//" + window.location.host + "/send/" + sessionId;
+
+////for local
+// const sse_url =
+//   "http://" + window.location.host + "/events/" + sessionId;
+// const send_url =
+//   "http://" + window.location.host + "/send/" + sessionId;
+
+////for docker
+// Get the base URL dynamically
+const protocol = window.location.protocol;
+const host = window.location.host;
+
+// Construct the URLs with the correct protocol and host
+const sse_url = `${protocol}//${host}/events/${sessionId}`;
+const send_url = `${protocol}//${host}/send/${sessionId}`;
+
 let eventSource = null;
 let is_audio = false;
 
