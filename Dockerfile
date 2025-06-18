@@ -34,19 +34,12 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy application code
 COPY . .
 
-# Find and verify the target functions.py location
-RUN echo "=== Copying patched functions.py ===" && \
+# Replace the functions.py file
+RUN echo "=== Replacing functions.py ===" && \
     TARGET_PATH="/opt/venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/functions.py" && \
-    echo "Source file size: $(stat -c%s /app/functions.py) bytes" && \
-    echo "Target path: $TARGET_PATH" && \
     mkdir -p "$(dirname "$TARGET_PATH")" && \
     cp -v /app/functions.py "$TARGET_PATH" && \
-    echo "=== Verifying copy ===" && \
-    echo "Copied file size: $(stat -c%s "$TARGET_PATH") bytes" && \
-    echo "First 5 lines of copied file:" && \
-    head -n 5 "$TARGET_PATH" && \
-    echo "=== Copy complete ==="
-
+    echo "=== File replaced successfully ==="
 
 # Create a non-root user
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app
