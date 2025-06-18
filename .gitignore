@@ -1,9 +1,10 @@
 # Python
 __pycache__/
+.github
 
 # Virtual Environment
-!env/
+env/
 
 # Environment variables
-.env.*
-!.env.example
+.env
+
