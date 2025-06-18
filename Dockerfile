@@ -37,6 +37,7 @@ RUN echo "=== Replacing functions.py ===" && \
     cp -v /app/functions.py "$PYTHON_PATH"
 
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app
+RUN chown -R appuser:appuser /opt/venv
 USER appuser
 
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
