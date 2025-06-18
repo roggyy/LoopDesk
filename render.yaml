@@ -2,8 +2,11 @@ services:
   - type: web
     name: loopdesk
     env: docker
-    region: oregon  
+    region: oregon
     build:
       dockerfile: Dockerfile
-    healthCheckPath: /  
+    envVars:
+      - key: PORT
+        value: 8000
+    healthCheckPath: /
     autoDeploy: true

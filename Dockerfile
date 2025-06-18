@@ -34,11 +34,18 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy application code
 COPY . .
 
-# Replace the functions.py file
+# Replace the functions.py section with:
 RUN echo "=== Replacing functions.py ===" && \
-    TARGET_PATH="/opt/venv/lib/python3.12/site-packages/google/adk/flows/llm_flows/functions.py" && \
-    mkdir -p "$(dirname "$TARGET_PATH")" && \
-    cp -v /app/functions.py "$TARGET_PATH" && \
+    # This will find the correct python version path
+    PYTHON_PATH=$(python -c "import sys; print(f'{sys.prefix}/lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages/google/adk/flows/llm_flows/functions.py')") && \
+    echo "Target path: $PYTHON_PATH" && \
+    mkdir -p "$(dirname "$PYTHON_PATH")" && \
+    cp -v /app/functions.py "$PYTHON_PATH" && \
+    # Verify the file was copied
+    echo "=== File verification ===" && \
+    ls -la "$PYTHON_PATH" && \
+    echo "=== First 5 lines ===" && \
+    head -n 5 "$PYTHON_PATH" && \
     echo "=== File replaced successfully ==="
 
 # Create a non-root user
